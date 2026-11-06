@@ -1,0 +1,62 @@
+openapi: 3.1.0
+info:
+  title: document-service
+  version: 1.0.0
+paths:
+  /internal/v1/documents/generate:
+    post:
+      tags: [internal]
+      summary: Сгенерировать документы для заказа
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, documentType]
+              properties:
+                orderId: { type: string, format: uuid }
+                documentType: { type: string, enum: [TRANSPORT_WAYBILL, DRIVER_LOG] }
+      responses:
+        '200':
+          description: Документы сгенерированы
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DocumentInfo' }
+  /api/v1/documents/{id}:
+    get:
+      tags: [public]
+      summary: Скачать документ
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Файл документа
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '404':
+          description: Не найдено
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  schemas:
+    DocumentInfo:
+      type: object
+      properties:
+        documentId: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        type: { type: string }
+        url: { type: string, format: uri }
+        createdAt: { type: string, format: date-time }
+    Problem:
+      type: object
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

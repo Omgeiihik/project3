@@ -1,0 +1,138 @@
+openapi: 3.1.0
+info:
+  title: order-service
+  version: 1.0.0
+  description: Управление заявками и оркестрация саги
+paths:
+  /api/v1/orders:
+    post:
+      tags: [public]
+      summary: Создать заявку на перевозку
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateOrderRequest' }
+            example:
+              clientId: "c1a2b3c4-... "
+              pickupAddress: "Москва, ул. Ленина, 1"
+              deliveryAddress: "Санкт-Петербург, Невский пр., 10"
+              cargo: { weightKg: 1500, volumeM3: 10, type: "GENERAL" }
+      responses:
+        '201':
+          description: Заявка создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400':
+          description: Неверные данные
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+    get:
+      tags: [public]
+      summary: Список заявок (с пагинацией)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Список заявок
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items: { $ref: '#/components/schemas/Order' }
+                  totalElements: { type: integer }
+  /api/v1/orders/{id}:
+    get:
+      tags: [public]
+      summary: Получить заявку по ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Заявка
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '404':
+          description: Не найдено
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /internal/v1/orders/{id}/status:
+    patch:
+      tags: [internal]
+      summary: Обновить статус заявки (внутренний)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [NEW, ROUTE_CALCULATED, ASSIGNED, IN_TRANSIT, DELIVERED, INVOICED, PAID, CLOSED, CANCELLED, PAYMENT_FAILED] }
+      responses:
+        '200':
+          description: Статус обновлён
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      required: [clientId, pickupAddress, deliveryAddress, cargo]
+      properties:
+        clientId: { type: string, format: uuid }
+        pickupAddress: { type: string }
+        deliveryAddress: { type: string }
+        cargo:
+          type: object
+          properties:
+            weightKg: { type: number }
+            volumeM3: { type: number }
+            type: { type: string, enum: [GENERAL, FRAGILE, PERISHABLE, HAZARDOUS] }
+    Order:
+      type: object
+      required: [id, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        route: { $ref: '#/components/schemas/Route' }
+        assignedDriverId: { type: string, format: uuid }
+        assignedVehicleId: { type: string, format: uuid }
+    Route:
+      type: object
+      properties:
+        distanceKm: { type: number }
+        estimatedDurationMin: { type: integer }
+        price: { type: number }
+        currency: { type: string }
+    Problem:
+      type: object
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

@@ -1,0 +1,57 @@
+openapi: 3.1.0
+info:
+  title: tracking-service
+  version: 1.0.0
+paths:
+  /internal/v1/tracking/location:
+    post:
+      tags: [internal]
+      summary: Принять координаты ТС
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, latitude, longitude, timestamp]
+              properties:
+                orderId: { type: string, format: uuid }
+                latitude: { type: number }
+                longitude: { type: number }
+                timestamp: { type: string, format: date-time }
+      responses:
+        '202':
+          description: Координаты приняты
+  /api/v1/tracking/{orderId}:
+    get:
+      tags: [public]
+      summary: Получить трек заказа
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: История трекинга
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TrackingPoint' }
+components:
+  schemas:
+    TrackingPoint:
+      type: object
+      properties:
+        latitude: { type: number }
+        longitude: { type: number }
+        timestamp: { type: string, format: date-time }
+        status: { type: string }
+    Problem:
+      type: object
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

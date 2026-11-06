@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: routing-service
+  version: 1.0.0
+paths:
+  /internal/v1/route/calculate:
+    post:
+      tags: [internal]
+      summary: Рассчитать маршрут и стоимость
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pickupAddress, deliveryAddress, cargo]
+              properties:
+                pickupAddress: { type: string }
+                deliveryAddress: { type: string }
+                cargo: { type: object }
+      responses:
+        '200':
+          description: Расчёт выполнен
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RouteCalculation' }
+        '400':
+          description: Невозможно построить маршрут
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  schemas:
+    RouteCalculation:
+      type: object
+      properties:
+        distanceKm: { type: number }
+        estimatedDurationMin: { type: integer }
+        price: { type: number }
+        currency: { type: string, default: RUB }
+    Problem:
+      type: object
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

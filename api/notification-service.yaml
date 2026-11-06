@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: notification-service
+  version: 1.0.0
+  description: Сервис уведомлений (только подписка на события, публичного API нет)
+paths: {}
+components:
+  schemas:
+    NotificationEvent:
+      type: object
+      properties:
+        eventId: { type: string, format: uuid }
+        eventType: { type: string }
+        occurredAt: { type: string, format: date-time }
+        schemaVersion: { type: integer }
+        payload:
+          type: object
+          properties:
+            recipient: { type: string }
+            channel: { type: string, enum: [EMAIL, SMS, PUSH] }
+            template: { type: string }
+            data: { type: object }
